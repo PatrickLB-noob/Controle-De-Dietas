@@ -1,0 +1,175 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f4f4f4;
+    min-height:100vh;
+}
+
+main{
+    width:100%;
+    max-width:500px;
+    margin:auto;
+    padding:20px;
+}
+
+.screen{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.hidden{
+    display:none;
+}
+
+h1,h2,p{
+    text-align:center;
+}
+
+button{
+    padding:15px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+input{
+    padding:15px;
+    font-size:20px;
+    text-align:center;
+    border:1px solid #ccc;
+    border-radius:10px;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+
+.contador{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px;
+    background:white;
+    border-radius:10px;
+}
+
+.contador div{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.contador button{
+    width:40px;
+    height:40px;
+    padding:0;
+}
+
+.navegacao{
+    display:flex;
+    gap:10px;
+}
+
+.navegacao button{
+    flex:1;
+}
+
+.especial-input{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+#resumoTexto{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    min-height:300px;
+    white-space:pre-wrap;
+}
+
+#listaHistorico{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.campo {
+
+    display: flex;
+
+    flex-direction: column;
+
+    margin-bottom: 15px;
+
+}
+
+.campo label {
+
+    margin-bottom: 5px;
+
+    font-weight: bold;
+
+}
+
+.campo input {
+
+    height: 50px;
+
+    font-size: 20px;
+
+    text-align: center;
+
+}
+
+.item-historico {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 15px;
+
+    margin-bottom: 10px;
+
+    border: 1px solid #ccc;
+
+    border-radius: 10px;
+
+    cursor: pointer;
+
+}
+
+.btn-excluir {
+
+    border: none;
+
+    background: transparent;
+
+    font-size: 22px;
+
+    cursor: pointer;
+
+}
+
+#quentinhasTexto{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    min-height:300px;
+    white-space:pre-wrap;
+    font-size:18px;
+    line-height:1.4;
+}

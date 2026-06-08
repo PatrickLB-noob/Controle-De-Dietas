@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Dietas</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c7a7b">
+</head>
+
+<body>
+
+    <main>
+
+        <!-- MENU -->
+        <section id="menu-screen" class="screen">
+
+            <h1>Controle de Dietas</h1>
+
+            <button id="btnNovaEstatistica">
+                Nova Estatística
+            </button>
+
+            <button id="btnHistorico">
+                Ver Estatísticas
+            </button>
+
+            <button id="btnQuentinhas">
+                Ver Quentinhas
+            </button>
+
+        </section>
+
+        <!-- CONTADORES -->
+        <section id="contadores-screen" class="screen hidden">
+
+            <h2>Contadores</h2>
+
+            <div class="contador">
+                <span>Purê</span>
+
+                <div>
+                    <button id="menosPure">-</button>
+                    <span id="valorPure">0</span>
+                    <button id="maisPure">+</button>
+                </div>
+            </div>
+
+            <div class="contador">
+                <span>PTN. Picada</span>
+
+                <div>
+                    <button id="menosPtn">-</button>
+                    <span id="valorPtn">0</span>
+                    <button id="maisPtn">+</button>
+                </div>
+            </div>
+
+            <div class="contador">
+                <span>Macarrão</span>
+
+                <div>
+                    <button id="menosMacarrao">-</button>
+                    <span id="valorMacarrao">0</span>
+                    <button id="maisMacarrao">+</button>
+                </div>
+            </div>
+
+            <button id="btnIniciarDietas">
+                Continuar
+            </button>
+
+        </section>
+
+        <!-- DIETAS -->
+        <section id="dietas-screen" class="screen hidden">
+
+            <h2 id="tipoEtapa">
+                DIETAS GRANDES (G)
+            </h2>
+
+            <p id="progresso">
+                Dieta 1 de 29
+            </p>
+
+            <h1 id="nomeDieta">
+                Normal
+            </h1>
+
+            <input
+                type="number"
+                id="valorDieta"
+                min="0"
+                value="0"
+                inputmode="numeric">
+
+            <div class="navegacao">
+
+                <button id="btnVoltar">
+                    Voltar
+                </button>
+
+                <button id="btnProximo">
+                    Próximo
+                </button>
+
+            </div>
+
+        </section>
+
+        <!-- ESPECIAIS -->
+        <section id="especiais-screen" class="screen hidden">
+
+            <h2>Dietas Especiais</h2>
+
+            <h1 id="nomeEspecial">
+                PED
+            </h1>
+
+            <div class="especial-input">
+
+                <label>G</label>
+
+                <input
+                       type="number"
+                        id="valorEspecialG"
+                        min="0"
+                        value="0"
+                        inputmode="numeric">
+
+            </div>
+
+            <div class="especial-input">
+
+                <label>P</label>
+
+                <input
+                       type="number"
+                        id="valorEspecialP"
+                        min="0"
+                        value="0"
+                        inputmode="numeric">
+
+            </div>
+
+            <div class="navegacao">
+
+                <button id="btnEspecialVoltar">
+                    Voltar
+                </button>
+
+                <button id="btnEspecialProximo">
+                    Próximo
+                </button>
+
+            </div>
+
+        </section>
+
+        <!--Sopas-->
+
+
+        <section id="sopa-screen" class="screen hidden">
+
+    <h2>Sopas</h2>
+
+    <div class="campo">
+
+    <label>Sopa Pedaço</label>
+
+    <input
+        type="number"
+        id="sopaPedaco"
+        min="0"
+        value="0"
+        inputmode="numeric">
+
+</div>
+
+<div class="campo">
+
+    <label>Sopa Batida</label>
+
+    <input
+        type="number"
+        id="sopaBatida"
+        min="0"
+        value="0"
+        inputmode="numeric">
+
+</div>
+    </div>
+
+    <div class="navegacao">
+
+        <button id="btnSopaVoltar">
+            Voltar
+        </button>
+
+        <button id="btnSopaProximo">
+            Próximo
+        </button>
+
+    </div>
+
+</section>
+
+      <section id="feijao-screen" class="screen hidden">
+
+    <h2>Feijões</h2>
+
+    <div class="campo">
+
+        <label>Liquidificado</label>
+
+        <input
+            type="number"
+            id="feijaoLiquidificado"
+            min="0"
+            value="0"
+            inputmode="numeric">
+
+    </div>
+
+    <div class="campo">
+
+        <label>Caldo</label>
+
+        <input
+            type="number"
+            id="feijaoCaldo"
+            min="0"
+            value="0"
+            inputmode="numeric">
+
+    </div>
+
+    <div class="campo">
+
+        <label>Batido</label>
+
+        <input
+            type="number"
+            id="feijaoBatido"
+            min="0"
+            value="0"
+            inputmode="numeric">
+
+    </div>
+
+    <div class="campo">
+
+        <label>Caroço</label>
+
+        <input
+            type="number"
+            id="feijaoCaroco"
+            min="0"
+            value="0"
+            inputmode="numeric">
+
+    </div>
+
+    <div class="campo">
+
+        <label>No Copo</label>
+
+        <input
+            type="number"
+            id="feijaoNoCopo"
+            min="0"
+            value="0"
+            inputmode="numeric">
+
+    </div>
+
+    <div class="navegacao">
+
+        <button id="btnFeijaoVoltar">
+            Voltar
+        </button>
+
+        <button id="btnFeijaoProximo">
+            Próximo
+        </button>
+
+    </div>
+
+</section>
+<!-- RESUMO -->
+        <section id="resumo-screen" class="screen hidden">
+
+            <h2>Resumo</h2>
+
+            <pre id="resumoTexto"></pre>
+
+            <button id="btnCopiar">
+                Copiar Lista
+            </button>
+
+            <button id="btnSalvar">
+                Salvar
+            </button>
+
+            <button id="btnMenu">
+                Menu Principal
+            </button>
+
+        </section>
+
+
+
+        <!-- QUENTINHAS -->
+        <section id="quentinhas-screen" class="screen hidden">
+
+            <h2 id="quentinhasTitulo">Quentinhas</h2>
+
+            <pre id="quentinhasTexto">Nenhuma informação de quentinhas disponível.</pre>
+
+            <button id="btnFecharQuentinhas">
+                Voltar
+            </button>
+
+        </section>
+
+
+        <!-- HISTÓRICO -->
+        <section id="historico-screen" class="screen hidden">
+
+            <h2>Estatísticas Salvas</h2>
+
+            <div id="listaHistorico"></div>
+
+            <button id="btnFecharHistorico">
+                Voltar
+            </button>
+
+        </section>
+    <section id="visualizar-screen" class="screen hidden">
+
+    <h2>Estatística</h2>
+
+    <pre id="estatisticaCompleta"></pre>
+
+    <button id="btnCopiarHistorico">
+        Copiar
+    </button>
+
+    <button id="btnVoltarHistorico">
+        Voltar
+    </button>
+
+    </section>
+
+
+
+    </main>
+<script type="module" src="firebase.js"></script>
+<script type="module" src="app.js"></script>
+<script type="module" src="resumo.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(function () {
+        console.log("Service Worker registrado!");
+      })
+      .catch(function (erro) {
+        console.error("Erro ao registrar Service Worker:", erro);
+      });
+  });
+}
+</script>
+</body>
+
+</html>
