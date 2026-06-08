@@ -55,21 +55,45 @@ async function excluirEstatisticaNaNuvem(id) {
   console.log("Estatística excluída da nuvem:", id);
 }
 
-async function salvarQuentinhasAtual(quentinhas) {
-  await setDoc(
-    doc(db, "quentinhasAtuais", "ultima"),
-    {
-      ...quentinhas,
-      atualizadoEm: serverTimestamp(),
-    }
-  );
-
-  console.log("Quentinhas atualizadas na nuvem");
+function normalizarTextoParaId(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-function observarQuentinhasAtual(callback) {
+function obterIdDocumentoQuentinhas(quentinhas) {
+  const dataId = quentinhas?.dataId || new Date().toISOString().slice(0, 10);
+  const refeicaoId = normalizarTextoParaId(quentinhas?.refeicao || "outra");
+
+  return `${dataId}_${refeicaoId}`;
+}
+
+async function salvarQuentinhasAtual(quentinhas) {
+  const idDocumento = obterIdDocumentoQuentinhas(quentinhas);
+
+  await setDoc(
+    doc(db, "quentinhasAtuais", idDocumento),
+    {
+      ...quentinhas,
+      id: idDocumento,
+      atualizadoEm: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  console.log("Quentinhas atualizadas na nuvem:", idDocumento);
+
+  return idDocumento;
+}
+
+function observarQuentinhasAtual(callback, dadosBase = {}) {
+  const idDocumento = obterIdDocumentoQuentinhas(dadosBase);
+
   return onSnapshot(
-    doc(db, "quentinhasAtuais", "ultima"),
+    doc(db, "quentinhasAtuais", idDocumento),
     function (documento) {
       if (documento.exists()) {
         callback(documento.data());

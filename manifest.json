@@ -2,7 +2,7 @@
   "name": "Controle de Dietas",
   "short_name": "Dietas",
   "description": "Aplicativo para controle de dietas, estatísticas e quentinhas.",
-  "start_url": "./listagem.HTML",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f4f4",

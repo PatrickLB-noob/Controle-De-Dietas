@@ -1,9 +1,9 @@
-const CACHE_NAME = "controle-dietas-v1";
+const CACHE_NAME = "controle-dietas-v3";
 
 const ARQUIVOS_CACHE = [
   "./",
-  "./listagem.HTML",
-  "./style.CSS",
+  "./index.html",
+  "./style.css",
   "./app.js",
   "./resumo.js",
   "./firebase.js",
@@ -14,6 +14,8 @@ const ARQUIVOS_CACHE = [
 ];
 
 self.addEventListener("install", function (event) {
+  self.skipWaiting();
+
   event.waitUntil(
     caches.open(CACHE_NAME).then(function (cache) {
       return cache.addAll(ARQUIVOS_CACHE);
@@ -31,6 +33,8 @@ self.addEventListener("activate", function (event) {
           }
         })
       );
+    }).then(function () {
+      return self.clients.claim();
     })
   );
 });
@@ -39,8 +43,18 @@ self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(event.request).then(function (respostaCache) {
-      return respostaCache || fetch(event.request);
-    })
+    fetch(event.request)
+      .then(function (respostaRede) {
+        const copia = respostaRede.clone();
+
+        caches.open(CACHE_NAME).then(function (cache) {
+          cache.put(event.request, copia);
+        });
+
+        return respostaRede;
+      })
+      .catch(function () {
+        return caches.match(event.request);
+      })
   );
 });
