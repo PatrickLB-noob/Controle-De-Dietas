@@ -90,35 +90,55 @@ function normalizarTextoParaId(texto) {
     .replace(/^-+|-+$/g, "");
 }
 
-function obterDataCurta() {
-  return new Date().toLocaleDateString("pt-BR", {
+function obterDataCurta(data = new Date()) {
+  return data.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
   });
 }
 
-function obterDataIdLocal() {
-  const agora = new Date();
-  const ano = agora.getFullYear();
-  const mes = String(agora.getMonth() + 1).padStart(2, "0");
-  const dia = String(agora.getDate()).padStart(2, "0");
+function obterHorarioCurto(data = new Date()) {
+  return data.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function obterDataIdLocal(data = new Date()) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
 
   return `${ano}-${mes}-${dia}`;
 }
 
+function obterHorarioIdLocal(data = new Date()) {
+  const hora = String(data.getHours()).padStart(2, "0");
+  const minuto = String(data.getMinutes()).padStart(2, "0");
+  const segundo = String(data.getSeconds()).padStart(2, "0");
+
+  return `${hora}-${minuto}-${segundo}`;
+}
+
 function criarSessaoQuentinhas() {
+  const agora = new Date();
   const refeicao = identificarRefeicao();
-  const dataCurta = obterDataCurta();
-  const dataId = obterDataIdLocal();
-  const id = `${dataId}_${normalizarTextoParaId(refeicao)}`;
+  const dataCurta = obterDataCurta(agora);
+  const horarioCurto = obterHorarioCurto(agora);
+  const dataId = obterDataIdLocal(agora);
+  const horarioId = obterHorarioIdLocal(agora);
+  const criadoEm = Date.now();
+  const id = `${dataId}_${normalizarTextoParaId(refeicao)}_${horarioId}`;
 
   return {
     id,
-    titulo: `${refeicao} ${dataCurta}`,
+    titulo: `${refeicao} ${dataCurta} ${horarioCurto}`,
     refeicao,
     dataCurta,
+    horarioCurto,
     dataId,
-    criadoEm: Date.now(),
+    horarioId,
+    criadoEm,
   };
 }
 
@@ -270,6 +290,10 @@ function pararObservadorAtual() {
 function abrirQuentinhasPorId(id) {
   pararObservadorAtual();
 
+  if (listaQuentinhas) {
+    listaQuentinhas.innerHTML = "";
+  }
+
   if (quentinhasTexto) {
     quentinhasTexto.textContent = "Carregando quentinhas...";
   }
@@ -320,7 +344,9 @@ async function carregarListaQuentinhas() {
       linha.classList.add("item-historico");
 
       const texto = document.createElement("span");
-      texto.textContent = item.titulo || `${item.refeicao || "Refeição"} ${item.dataCurta || ""}`;
+      texto.textContent =
+        item.titulo ||
+        `${item.refeicao || "Refeição"} ${item.dataCurta || ""} ${item.horarioCurto || ""}`.trim();
 
       linha.addEventListener("click", function () {
         abrirQuentinhasPorId(item.id);
