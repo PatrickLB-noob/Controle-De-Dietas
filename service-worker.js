@@ -1,4 +1,4 @@
-const CACHE_NAME = "controle-dietas-v3";
+const CACHE_NAME = "dietas-v7";
 
 const ARQUIVOS_CACHE = [
   "./",

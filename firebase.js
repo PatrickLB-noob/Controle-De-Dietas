@@ -65,6 +65,10 @@ function normalizarTextoParaId(texto) {
 }
 
 function obterIdDocumentoQuentinhas(quentinhas) {
+  if (quentinhas?.id) {
+    return quentinhas.id;
+  }
+
   const dataId = quentinhas?.dataId || new Date().toISOString().slice(0, 10);
   const refeicaoId = normalizarTextoParaId(quentinhas?.refeicao || "outra");
 
@@ -89,14 +93,30 @@ async function salvarQuentinhasAtual(quentinhas) {
   return idDocumento;
 }
 
-function observarQuentinhasAtual(callback, dadosBase = {}) {
-  const idDocumento = obterIdDocumentoQuentinhas(dadosBase);
+async function buscarQuentinhasNaNuvem() {
+  const querySnapshot = await getDocs(collection(db, "quentinhasAtuais"));
 
+  const quentinhas = [];
+
+  querySnapshot.forEach(function (documento) {
+    quentinhas.push({
+      id: documento.id,
+      ...documento.data(),
+    });
+  });
+
+  return quentinhas;
+}
+
+function observarQuentinhasPorId(idDocumento, callback) {
   return onSnapshot(
     doc(db, "quentinhasAtuais", idDocumento),
     function (documento) {
       if (documento.exists()) {
-        callback(documento.data());
+        callback({
+          id: documento.id,
+          ...documento.data(),
+        });
       } else {
         callback(null);
       }
@@ -108,10 +128,18 @@ function observarQuentinhasAtual(callback, dadosBase = {}) {
   );
 }
 
+function observarQuentinhasAtual(callback, dadosBase = {}) {
+  const idDocumento = obterIdDocumentoQuentinhas(dadosBase);
+
+  return observarQuentinhasPorId(idDocumento, callback);
+}
+
 export {
   salvarNaNuvem,
   buscarEstatisticasNaNuvem,
   excluirEstatisticaNaNuvem,
   salvarQuentinhasAtual,
+  buscarQuentinhasNaNuvem,
   observarQuentinhasAtual,
+  observarQuentinhasPorId,
 };

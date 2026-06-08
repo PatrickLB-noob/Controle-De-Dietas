@@ -1,12 +1,15 @@
 import {
   salvarQuentinhasAtual,
-  observarQuentinhasAtual,
+  buscarQuentinhasNaNuvem,
+  observarQuentinhasPorId,
 } from "./firebase.js";
 
 const quentinhasTexto = document.getElementById("quentinhasTexto");
 const quentinhasTitulo = document.getElementById("quentinhasTitulo");
+const listaQuentinhas = document.getElementById("listaQuentinhas");
 
 let pararObservadorQuentinhas = null;
+let sessaoQuentinhasAtual = null;
 
 const regrasRampas = [
   {
@@ -78,6 +81,15 @@ function identificarRefeicao() {
   return "Outra";
 }
 
+function normalizarTextoParaId(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function obterDataCurta() {
   return new Date().toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -92,6 +104,22 @@ function obterDataIdLocal() {
   const dia = String(agora.getDate()).padStart(2, "0");
 
   return `${ano}-${mes}-${dia}`;
+}
+
+function criarSessaoQuentinhas() {
+  const refeicao = identificarRefeicao();
+  const dataCurta = obterDataCurta();
+  const dataId = obterDataIdLocal();
+  const id = `${dataId}_${normalizarTextoParaId(refeicao)}`;
+
+  return {
+    id,
+    titulo: `${refeicao} ${dataCurta}`,
+    refeicao,
+    dataCurta,
+    dataId,
+    criadoEm: Date.now(),
+  };
 }
 
 function numero(valor) {
@@ -119,6 +147,8 @@ function calcularQuentinhas(dados) {
     respostasPequenas,
     respostasEspeciais,
   } = dados;
+
+  const sessao = sessaoQuentinhasAtual || criarSessaoQuentinhas();
 
   const rampas = [];
   let totalGrandes = 0;
@@ -152,16 +182,8 @@ function calcularQuentinhas(dados) {
     });
   });
 
-  const refeicao = identificarRefeicao();
-  const dataCurta = obterDataCurta();
-  const dataId = obterDataIdLocal();
-
   return {
-    titulo: `${refeicao} ${dataCurta}`,
-    refeicao,
-    dataCurta,
-    dataId,
-    criadoEm: Date.now(),
+    ...sessao,
     rampas,
     totalGrandes,
     totalPequenas,
@@ -177,7 +199,9 @@ function formatarQuentinhas(quentinhas) {
 
   texto += `${quentinhas.titulo || "Quentinhas"}\n\n`;
 
-  quentinhas.rampas.forEach(function (rampa) {
+  const rampas = quentinhas.rampas || [];
+
+  rampas.forEach(function (rampa) {
     texto += `${rampa.nome}\n`;
     texto += `Grandes: ${numero(rampa.grandes)}\n`;
     texto += `Pequenas: ${numero(rampa.pequenas)}\n\n`;
@@ -202,7 +226,27 @@ function mostrarQuentinhasNaTela(quentinhas) {
   quentinhasTexto.textContent = formatarQuentinhas(quentinhas);
 }
 
+async function iniciarSessaoQuentinhasAtual(dados) {
+  sessaoQuentinhasAtual = criarSessaoQuentinhas();
+
+  const quentinhas = calcularQuentinhas(dados);
+
+  mostrarQuentinhasNaTela(quentinhas);
+
+  try {
+    await salvarQuentinhasAtual(quentinhas);
+  } catch (erro) {
+    console.error("Erro ao criar sessão de quentinhas:", erro);
+  }
+
+  return quentinhas;
+}
+
 async function atualizarQuentinhasAtual(dados) {
+  if (!sessaoQuentinhasAtual) {
+    sessaoQuentinhasAtual = criarSessaoQuentinhas();
+  }
+
   const quentinhas = calcularQuentinhas(dados);
 
   mostrarQuentinhasNaTela(quentinhas);
@@ -216,27 +260,94 @@ async function atualizarQuentinhasAtual(dados) {
   return quentinhas;
 }
 
-function obterDadosDocumentoAtualQuentinhas() {
-  return {
-    dataId: obterDataIdLocal(),
-    refeicao: identificarRefeicao(),
-  };
-}
-
-function iniciarObservadorQuentinhas() {
+function pararObservadorAtual() {
   if (pararObservadorQuentinhas) {
     pararObservadorQuentinhas();
     pararObservadorQuentinhas = null;
   }
+}
 
-  pararObservadorQuentinhas = observarQuentinhasAtual(function (quentinhas) {
+function abrirQuentinhasPorId(id) {
+  pararObservadorAtual();
+
+  if (quentinhasTexto) {
+    quentinhasTexto.textContent = "Carregando quentinhas...";
+  }
+
+  pararObservadorQuentinhas = observarQuentinhasPorId(id, function (quentinhas) {
     mostrarQuentinhasNaTela(quentinhas);
-  }, obterDadosDocumentoAtualQuentinhas());
+  });
+}
+
+function ordenarQuentinhasMaisRecentes(lista) {
+  return [...lista].sort(function (a, b) {
+    const dataB = b.criadoEm || 0;
+    const dataA = a.criadoEm || 0;
+
+    return dataB - dataA;
+  });
+}
+
+async function carregarListaQuentinhas() {
+  pararObservadorAtual();
+
+  if (quentinhasTitulo) {
+    quentinhasTitulo.textContent = "Quentinhas";
+  }
+
+  if (quentinhasTexto) {
+    quentinhasTexto.textContent = "Escolha uma refeição para acompanhar.";
+  }
+
+  if (!listaQuentinhas) return;
+
+  listaQuentinhas.innerHTML = "";
+
+  try {
+    const quentinhas = ordenarQuentinhasMaisRecentes(
+      await buscarQuentinhasNaNuvem()
+    );
+
+    if (quentinhas.length === 0) {
+      const mensagem = document.createElement("p");
+      mensagem.textContent = "Nenhuma quentinha salva.";
+      listaQuentinhas.appendChild(mensagem);
+      return;
+    }
+
+    quentinhas.forEach(function (item) {
+      const linha = document.createElement("div");
+      linha.classList.add("item-historico");
+
+      const texto = document.createElement("span");
+      texto.textContent = item.titulo || `${item.refeicao || "Refeição"} ${item.dataCurta || ""}`;
+
+      linha.addEventListener("click", function () {
+        abrirQuentinhasPorId(item.id);
+      });
+
+      linha.appendChild(texto);
+      listaQuentinhas.appendChild(linha);
+    });
+  } catch (erro) {
+    console.error("Erro ao carregar quentinhas:", erro);
+
+    const mensagem = document.createElement("p");
+    mensagem.textContent = "Não foi possível carregar as quentinhas da nuvem.";
+    listaQuentinhas.appendChild(mensagem);
+  }
+}
+
+// Mantida por compatibilidade, mas agora a tela lista as refeições primeiro.
+function iniciarObservadorQuentinhas() {
+  carregarListaQuentinhas();
 }
 
 export {
   calcularQuentinhas,
   atualizarQuentinhasAtual,
+  iniciarSessaoQuentinhasAtual,
   iniciarObservadorQuentinhas,
+  carregarListaQuentinhas,
   formatarQuentinhas,
 };

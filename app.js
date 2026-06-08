@@ -1,7 +1,8 @@
 import { gerarResumo, carregarHistorico } from "./resumo.js";
 import {
   atualizarQuentinhasAtual,
-  iniciarObservadorQuentinhas,
+  iniciarSessaoQuentinhasAtual,
+  carregarListaQuentinhas,
 } from "./quentinhas.js";
 
 const menuScreen = document.getElementById("menu-screen");
@@ -53,6 +54,10 @@ function esconderTodasAsTelas() {
 }
 
 btnNovaEstatistica.addEventListener("click", function () {
+  resetarNovaEstatistica();
+
+  iniciarSessaoQuentinhasAtual(obterDadosAtuaisEstatistica());
+
   mostrarTela(contadoresScreen);
 });
 
@@ -63,7 +68,7 @@ btnHistorico.addEventListener("click", function () {
 });
 
 btnQuentinhas.addEventListener("click", function () {
-  iniciarObservadorQuentinhas();
+  carregarListaQuentinhas();
 
   mostrarTela(quentinhasScreen);
 });
@@ -545,6 +550,53 @@ btnFeijaoVoltar.addEventListener("click", function () {
   sopaPedaco.focus();
   sopaPedaco.select();
 });
+
+
+function limparObjeto(objeto) {
+  Object.keys(objeto).forEach(function (chave) {
+    delete objeto[chave];
+  });
+}
+
+function resetarNovaEstatistica() {
+  pure = 0;
+  ptn = 0;
+  macarrao = 0;
+
+  atualizarContadores();
+
+  limparObjeto(respostasGrandes);
+  limparObjeto(respostasPequenas);
+
+  respostasEspeciais.PED.G = 0;
+  respostasEspeciais.PED.P = 0;
+  respostasEspeciais.PSIQUIATRIA.G = 0;
+  respostasEspeciais.PSIQUIATRIA.P = 0;
+
+  sopa.pedaco = 0;
+  sopa.batida = 0;
+
+  feijao.liquidificado = 0;
+  feijao.caldo = 0;
+  feijao.batido = 0;
+  feijao.caroco = 0;
+  feijao.noCopo = 0;
+
+  indiceDieta = 0;
+  etapaAtual = "grandes";
+  indiceEspecial = 0;
+
+  if (valorDieta) valorDieta.value = 0;
+  if (valorEspecialG) valorEspecialG.value = 0;
+  if (valorEspecialP) valorEspecialP.value = 0;
+  if (sopaPedaco) sopaPedaco.value = 0;
+  if (sopaBatida) sopaBatida.value = 0;
+  if (feijaoLiquidificado) feijaoLiquidificado.value = 0;
+  if (feijaoCaldo) feijaoCaldo.value = 0;
+  if (feijaoBatido) feijaoBatido.value = 0;
+  if (feijaoCaroco) feijaoCaroco.value = 0;
+  if (feijaoNoCopo) feijaoNoCopo.value = 0;
+}
 
 window.abrirTelaHistorico = function () {
   mostrarTela(historicoScreen);
