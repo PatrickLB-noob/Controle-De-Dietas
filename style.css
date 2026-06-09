@@ -173,3 +173,16 @@ input::-webkit-inner-spin-button{
     font-size:18px;
     line-height:1.4;
 }
+
+#listaQuentinhas{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.btn-excluir-quentinha-aberta{
+    background:#d9534f;
+    color:white;
+    font-weight:bold;
+}
+

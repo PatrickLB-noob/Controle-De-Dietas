@@ -15,6 +15,83 @@ const listaQuentinhas = document.getElementById("listaQuentinhas");
 let pararObservadorQuentinhas = null;
 let sessaoQuentinhasAtual = null;
 let ultimaQuentinhaAtual = null;
+let quentinhaAbertaAtual = null;
+let btnExcluirQuentinhaAberta = null;
+
+function garantirBotaoExcluirQuentinhaAberta() {
+  if (btnExcluirQuentinhaAberta) {
+    return btnExcluirQuentinhaAberta;
+  }
+
+  btnExcluirQuentinhaAberta = document.createElement("button");
+  btnExcluirQuentinhaAberta.id = "btnExcluirQuentinhaAberta";
+  btnExcluirQuentinhaAberta.textContent = "Excluir quentinha";
+  btnExcluirQuentinhaAberta.classList.add("btn-excluir-quentinha-aberta", "hidden");
+
+  btnExcluirQuentinhaAberta.addEventListener("click", async function () {
+    if (!quentinhaAbertaAtual) {
+      return;
+    }
+
+    const confirmar = confirm("Deseja excluir esta quentinha?");
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      await excluirQuentinhaNaNuvem(
+        quentinhaAbertaAtual.id,
+        quentinhaAbertaAtual.status
+      );
+
+      pararObservadorAtual();
+      quentinhaAbertaAtual = null;
+
+      await carregarListaQuentinhas();
+    } catch (erro) {
+      alert("Erro ao excluir quentinha.");
+      console.error(erro);
+    }
+  });
+
+  if (quentinhasTexto && quentinhasTexto.parentNode) {
+    quentinhasTexto.parentNode.insertBefore(
+      btnExcluirQuentinhaAberta,
+      quentinhasTexto.nextSibling
+    );
+  }
+
+  return btnExcluirQuentinhaAberta;
+}
+
+function mostrarBotaoExcluirQuentinhaAberta(id, status) {
+  const botao = garantirBotaoExcluirQuentinhaAberta();
+
+  quentinhaAbertaAtual = {
+    id,
+    status,
+  };
+
+  botao.classList.remove("hidden");
+}
+
+function esconderBotaoExcluirQuentinhaAberta() {
+  const botao = garantirBotaoExcluirQuentinhaAberta();
+
+  quentinhaAbertaAtual = null;
+  botao.classList.add("hidden");
+}
+
+function criarBotaoVoltarListaQuentinhas() {
+  const botaoVoltarLista = document.createElement("button");
+
+  botaoVoltarLista.textContent = "Voltar para lista";
+  botaoVoltarLista.addEventListener("click", function () {
+    carregarListaQuentinhas();
+  });
+
+  return botaoVoltarLista;
+}
 
 const regrasRampas = [
   {
@@ -337,13 +414,21 @@ function abrirQuentinhasPorId(id, status = "em_andamento") {
 
   if (listaQuentinhas) {
     listaQuentinhas.innerHTML = "";
+    listaQuentinhas.appendChild(criarBotaoVoltarListaQuentinhas());
   }
 
   if (quentinhasTexto) {
     quentinhasTexto.textContent = "Carregando quentinhas...";
   }
 
+  mostrarBotaoExcluirQuentinhaAberta(id, status);
+
   pararObservadorQuentinhas = observarQuentinhasPorId(id, function (quentinhas) {
+    if (!quentinhas) {
+      mostrarQuentinhasNaTela(null);
+      return;
+    }
+
     mostrarQuentinhasNaTela(quentinhas);
   }, status);
 }
@@ -413,6 +498,7 @@ function adicionarLinhaQuentinha(item, status) {
 
 async function carregarListaQuentinhas() {
   pararObservadorAtual();
+  esconderBotaoExcluirQuentinhaAberta();
 
   if (quentinhasTitulo) {
     quentinhasTitulo.textContent = "Quentinhas";
