@@ -75,32 +75,45 @@ function obterIdDocumentoQuentinhas(quentinhas) {
   return `${dataId}_${refeicaoId}`;
 }
 
-async function salvarQuentinhasAtual(quentinhas) {
+function obterIdFinalizado(quentinhas) {
+  if (quentinhas?.idFinalizado) {
+    return quentinhas.idFinalizado;
+  }
+
+  const base = obterIdDocumentoQuentinhas(quentinhas);
+  const horarioId = quentinhas?.horarioFinalizacaoId || quentinhas?.horarioId || String(Date.now());
+
+  return `${base}_${horarioId}`;
+}
+
+async function salvarQuentinhasEmAndamento(quentinhas) {
   const idDocumento = obterIdDocumentoQuentinhas(quentinhas);
 
   await setDoc(
-    doc(db, "quentinhasAtuais", idDocumento),
+    doc(db, "quentinhasEmAndamento", idDocumento),
     {
       ...quentinhas,
       id: idDocumento,
+      status: "em_andamento",
       atualizadoEm: serverTimestamp(),
     },
     { merge: true }
   );
 
-  console.log("Quentinhas atualizadas na nuvem:", idDocumento);
+  console.log("Quentinhas em andamento atualizadas:", idDocumento);
 
   return idDocumento;
 }
 
-async function buscarQuentinhasNaNuvem() {
-  const querySnapshot = await getDocs(collection(db, "quentinhasAtuais"));
+async function buscarQuentinhasEmAndamento() {
+  const querySnapshot = await getDocs(collection(db, "quentinhasEmAndamento"));
 
   const quentinhas = [];
 
   querySnapshot.forEach(function (documento) {
     quentinhas.push({
       id: documento.id,
+      status: "em_andamento",
       ...documento.data(),
     });
   });
@@ -108,13 +121,14 @@ async function buscarQuentinhasNaNuvem() {
   return quentinhas;
 }
 
-function observarQuentinhasPorId(idDocumento, callback) {
+function observarQuentinhasEmAndamentoPorId(idDocumento, callback) {
   return onSnapshot(
-    doc(db, "quentinhasAtuais", idDocumento),
+    doc(db, "quentinhasEmAndamento", idDocumento),
     function (documento) {
       if (documento.exists()) {
         callback({
           id: documento.id,
+          status: "em_andamento",
           ...documento.data(),
         });
       } else {
@@ -122,16 +136,111 @@ function observarQuentinhasPorId(idDocumento, callback) {
       }
     },
     function (erro) {
-      console.error("Erro ao observar quentinhas:", erro);
+      console.error("Erro ao observar quentinhas em andamento:", erro);
       callback(null);
     }
   );
 }
 
+async function excluirQuentinhaEmAndamento(id) {
+  await deleteDoc(doc(db, "quentinhasEmAndamento", id));
+}
+
+async function salvarQuentinhaFinalizada(quentinhas) {
+  const idDocumento = obterIdFinalizado(quentinhas);
+
+  await setDoc(
+    doc(db, "quentinhasFinalizadas", idDocumento),
+    {
+      ...quentinhas,
+      id: idDocumento,
+      idOrigem: quentinhas.id || obterIdDocumentoQuentinhas(quentinhas),
+      status: "finalizada",
+      finalizadaEm: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  console.log("Quentinha finalizada salva:", idDocumento);
+
+  return idDocumento;
+}
+
+async function buscarQuentinhasFinalizadas() {
+  const querySnapshot = await getDocs(collection(db, "quentinhasFinalizadas"));
+
+  const quentinhas = [];
+
+  querySnapshot.forEach(function (documento) {
+    quentinhas.push({
+      id: documento.id,
+      status: "finalizada",
+      ...documento.data(),
+    });
+  });
+
+  return quentinhas;
+}
+
+function observarQuentinhaFinalizadaPorId(idDocumento, callback) {
+  return onSnapshot(
+    doc(db, "quentinhasFinalizadas", idDocumento),
+    function (documento) {
+      if (documento.exists()) {
+        callback({
+          id: documento.id,
+          status: "finalizada",
+          ...documento.data(),
+        });
+      } else {
+        callback(null);
+      }
+    },
+    function (erro) {
+      console.error("Erro ao observar quentinha finalizada:", erro);
+      callback(null);
+    }
+  );
+}
+
+async function excluirQuentinhaFinalizada(id) {
+  await deleteDoc(doc(db, "quentinhasFinalizadas", id));
+}
+
+// Compatibilidade com versões anteriores do app.
+async function salvarQuentinhasAtual(quentinhas) {
+  return salvarQuentinhasEmAndamento(quentinhas);
+}
+
+async function buscarQuentinhasNaNuvem() {
+  const [emAndamento, finalizadas] = await Promise.all([
+    buscarQuentinhasEmAndamento(),
+    buscarQuentinhasFinalizadas(),
+  ]);
+
+  return [...emAndamento, ...finalizadas];
+}
+
+function observarQuentinhasPorId(idDocumento, callback, status = "em_andamento") {
+  if (status === "finalizada") {
+    return observarQuentinhaFinalizadaPorId(idDocumento, callback);
+  }
+
+  return observarQuentinhasEmAndamentoPorId(idDocumento, callback);
+}
+
+async function excluirQuentinhaNaNuvem(id, status = "em_andamento") {
+  if (status === "finalizada") {
+    return excluirQuentinhaFinalizada(id);
+  }
+
+  return excluirQuentinhaEmAndamento(id);
+}
+
 function observarQuentinhasAtual(callback, dadosBase = {}) {
   const idDocumento = obterIdDocumentoQuentinhas(dadosBase);
 
-  return observarQuentinhasPorId(idDocumento, callback);
+  return observarQuentinhasEmAndamentoPorId(idDocumento, callback);
 }
 
 export {
@@ -139,7 +248,16 @@ export {
   buscarEstatisticasNaNuvem,
   excluirEstatisticaNaNuvem,
   salvarQuentinhasAtual,
+  salvarQuentinhasEmAndamento,
   buscarQuentinhasNaNuvem,
+  buscarQuentinhasEmAndamento,
+  buscarQuentinhasFinalizadas,
   observarQuentinhasAtual,
   observarQuentinhasPorId,
+  observarQuentinhasEmAndamentoPorId,
+  observarQuentinhaFinalizadaPorId,
+  excluirQuentinhaNaNuvem,
+  excluirQuentinhaEmAndamento,
+  excluirQuentinhaFinalizada,
+  salvarQuentinhaFinalizada,
 };

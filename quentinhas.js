@@ -1,7 +1,11 @@
 import {
-  salvarQuentinhasAtual,
-  buscarQuentinhasNaNuvem,
+  salvarQuentinhasEmAndamento,
+  buscarQuentinhasEmAndamento,
+  buscarQuentinhasFinalizadas,
   observarQuentinhasPorId,
+  excluirQuentinhaNaNuvem,
+  salvarQuentinhaFinalizada,
+  excluirQuentinhaEmAndamento,
 } from "./firebase.js";
 
 const quentinhasTexto = document.getElementById("quentinhasTexto");
@@ -10,6 +14,7 @@ const listaQuentinhas = document.getElementById("listaQuentinhas");
 
 let pararObservadorQuentinhas = null;
 let sessaoQuentinhasAtual = null;
+let ultimaQuentinhaAtual = null;
 
 const regrasRampas = [
   {
@@ -124,21 +129,20 @@ function criarSessaoQuentinhas() {
   const agora = new Date();
   const refeicao = identificarRefeicao();
   const dataCurta = obterDataCurta(agora);
-  const horarioCurto = obterHorarioCurto(agora);
   const dataId = obterDataIdLocal(agora);
-  const horarioId = obterHorarioIdLocal(agora);
   const criadoEm = Date.now();
-  const id = `${dataId}_${normalizarTextoParaId(refeicao)}_${horarioId}`;
+
+  // Em andamento: apenas uma por data + refeição.
+  const id = `${dataId}_${normalizarTextoParaId(refeicao)}`;
 
   return {
     id,
-    titulo: `${refeicao} ${dataCurta} ${horarioCurto}`,
+    titulo: `${refeicao} ${dataCurta}`,
     refeicao,
     dataCurta,
-    horarioCurto,
     dataId,
-    horarioId,
     criadoEm,
+    status: "em_andamento",
   };
 }
 
@@ -250,11 +254,12 @@ async function iniciarSessaoQuentinhasAtual(dados) {
   sessaoQuentinhasAtual = criarSessaoQuentinhas();
 
   const quentinhas = calcularQuentinhas(dados);
+  ultimaQuentinhaAtual = quentinhas;
 
   mostrarQuentinhasNaTela(quentinhas);
 
   try {
-    await salvarQuentinhasAtual(quentinhas);
+    await salvarQuentinhasEmAndamento(quentinhas);
   } catch (erro) {
     console.error("Erro ao criar sessão de quentinhas:", erro);
   }
@@ -268,16 +273,56 @@ async function atualizarQuentinhasAtual(dados) {
   }
 
   const quentinhas = calcularQuentinhas(dados);
+  ultimaQuentinhaAtual = quentinhas;
 
   mostrarQuentinhasNaTela(quentinhas);
 
   try {
-    await salvarQuentinhasAtual(quentinhas);
+    await salvarQuentinhasEmAndamento(quentinhas);
   } catch (erro) {
     console.error("Erro ao atualizar quentinhas na nuvem:", erro);
   }
 
   return quentinhas;
+}
+
+function obterQuentinhasAtualCalculada() {
+  return ultimaQuentinhaAtual;
+}
+
+async function finalizarQuentinhasAtual() {
+  if (!ultimaQuentinhaAtual) {
+    return null;
+  }
+
+  const agora = new Date();
+  const horarioCurto = obterHorarioCurto(agora);
+  const horarioFinalizacaoId = obterHorarioIdLocal(agora);
+
+  const finalizada = {
+    ...ultimaQuentinhaAtual,
+    status: "finalizada",
+    titulo: `${ultimaQuentinhaAtual.refeicao} ${ultimaQuentinhaAtual.dataCurta} ${horarioCurto}`,
+    horarioCurto,
+    horarioFinalizacaoId,
+    finalizadaEmLocal: Date.now(),
+  };
+
+  try {
+    const idFinalizado = await salvarQuentinhaFinalizada(finalizada);
+    await excluirQuentinhaEmAndamento(ultimaQuentinhaAtual.id);
+
+    sessaoQuentinhasAtual = null;
+    ultimaQuentinhaAtual = null;
+
+    return {
+      ...finalizada,
+      id: idFinalizado,
+    };
+  } catch (erro) {
+    console.error("Erro ao finalizar quentinha:", erro);
+    return finalizada;
+  }
 }
 
 function pararObservadorAtual() {
@@ -287,7 +332,7 @@ function pararObservadorAtual() {
   }
 }
 
-function abrirQuentinhasPorId(id) {
+function abrirQuentinhasPorId(id, status = "em_andamento") {
   pararObservadorAtual();
 
   if (listaQuentinhas) {
@@ -300,16 +345,70 @@ function abrirQuentinhasPorId(id) {
 
   pararObservadorQuentinhas = observarQuentinhasPorId(id, function (quentinhas) {
     mostrarQuentinhasNaTela(quentinhas);
-  });
+  }, status);
 }
 
 function ordenarQuentinhasMaisRecentes(lista) {
   return [...lista].sort(function (a, b) {
-    const dataB = b.criadoEm || 0;
-    const dataA = a.criadoEm || 0;
+    const dataB = b.finalizadaEmLocal || b.criadoEm || 0;
+    const dataA = a.finalizadaEmLocal || a.criadoEm || 0;
 
     return dataB - dataA;
   });
+}
+
+function criarTituloLista(item) {
+  return (
+    item.titulo ||
+    `${item.refeicao || "Refeição"} ${item.dataCurta || ""} ${item.horarioCurto || ""}`.trim()
+  );
+}
+
+function adicionarTituloSecao(texto) {
+  const titulo = document.createElement("h3");
+  titulo.textContent = texto;
+  listaQuentinhas.appendChild(titulo);
+}
+
+function adicionarMensagemSecao(texto) {
+  const mensagem = document.createElement("p");
+  mensagem.textContent = texto;
+  listaQuentinhas.appendChild(mensagem);
+}
+
+function adicionarLinhaQuentinha(item, status) {
+  const linha = document.createElement("div");
+  linha.classList.add("item-historico");
+
+  const texto = document.createElement("span");
+  texto.textContent = criarTituloLista(item);
+
+  const btnExcluir = document.createElement("button");
+  btnExcluir.textContent = "🗑️";
+  btnExcluir.classList.add("btn-excluir");
+
+  btnExcluir.addEventListener("click", async function (event) {
+    event.stopPropagation();
+
+    const confirmar = confirm("Deseja excluir esta quentinha?");
+    if (!confirmar) return;
+
+    try {
+      await excluirQuentinhaNaNuvem(item.id, status);
+      carregarListaQuentinhas();
+    } catch (erro) {
+      alert("Erro ao excluir quentinha.");
+      console.error(erro);
+    }
+  });
+
+  linha.addEventListener("click", function () {
+    abrirQuentinhasPorId(item.id, status);
+  });
+
+  linha.appendChild(texto);
+  linha.appendChild(btnExcluir);
+  listaQuentinhas.appendChild(linha);
 }
 
 async function carregarListaQuentinhas() {
@@ -328,33 +427,34 @@ async function carregarListaQuentinhas() {
   listaQuentinhas.innerHTML = "";
 
   try {
-    const quentinhas = ordenarQuentinhasMaisRecentes(
-      await buscarQuentinhasNaNuvem()
-    );
+    const [emAndamento, finalizadas] = await Promise.all([
+      buscarQuentinhasEmAndamento(),
+      buscarQuentinhasFinalizadas(),
+    ]);
 
-    if (quentinhas.length === 0) {
-      const mensagem = document.createElement("p");
-      mensagem.textContent = "Nenhuma quentinha salva.";
-      listaQuentinhas.appendChild(mensagem);
-      return;
+    adicionarTituloSecao("EM ANDAMENTO");
+
+    const emAndamentoOrdenadas = ordenarQuentinhasMaisRecentes(emAndamento);
+
+    if (emAndamentoOrdenadas.length === 0) {
+      adicionarMensagemSecao("Nenhuma quentinha em andamento.");
+    } else {
+      emAndamentoOrdenadas.forEach(function (item) {
+        adicionarLinhaQuentinha(item, "em_andamento");
+      });
     }
 
-    quentinhas.forEach(function (item) {
-      const linha = document.createElement("div");
-      linha.classList.add("item-historico");
+    adicionarTituloSecao("FINALIZADAS");
 
-      const texto = document.createElement("span");
-      texto.textContent =
-        item.titulo ||
-        `${item.refeicao || "Refeição"} ${item.dataCurta || ""} ${item.horarioCurto || ""}`.trim();
+    const finalizadasOrdenadas = ordenarQuentinhasMaisRecentes(finalizadas);
 
-      linha.addEventListener("click", function () {
-        abrirQuentinhasPorId(item.id);
+    if (finalizadasOrdenadas.length === 0) {
+      adicionarMensagemSecao("Nenhuma quentinha finalizada.");
+    } else {
+      finalizadasOrdenadas.forEach(function (item) {
+        adicionarLinhaQuentinha(item, "finalizada");
       });
-
-      linha.appendChild(texto);
-      listaQuentinhas.appendChild(linha);
-    });
+    }
   } catch (erro) {
     console.error("Erro ao carregar quentinhas:", erro);
 
@@ -364,7 +464,6 @@ async function carregarListaQuentinhas() {
   }
 }
 
-// Mantida por compatibilidade, mas agora a tela lista as refeições primeiro.
 function iniciarObservadorQuentinhas() {
   carregarListaQuentinhas();
 }
@@ -376,4 +475,6 @@ export {
   iniciarObservadorQuentinhas,
   carregarListaQuentinhas,
   formatarQuentinhas,
+  finalizarQuentinhasAtual,
+  obterQuentinhasAtualCalculada,
 };

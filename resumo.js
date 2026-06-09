@@ -4,7 +4,10 @@ import {
   excluirEstatisticaNaNuvem,
 } from "./firebase.js";
 
-import { calcularQuentinhas } from "./quentinhas.js";
+import {
+  calcularQuentinhas,
+  finalizarQuentinhasAtual,
+} from "./quentinhas.js";
 
 const resumoTexto = document.getElementById("resumoTexto");
 const btnSalvar = document.getElementById("btnSalvar");
@@ -194,6 +197,16 @@ btnSalvar.addEventListener("click", async function () {
   if (ultimaEstatisticaGerada.sincronizado && ultimaEstatisticaGerada.id) {
     alert("Esta estatística já foi salva.");
     return;
+  }
+
+  try {
+    const quentinhasFinalizadas = await finalizarQuentinhasAtual();
+
+    if (quentinhasFinalizadas) {
+      ultimaEstatisticaGerada.quentinhas = quentinhasFinalizadas;
+    }
+  } catch (erro) {
+    console.error("Erro ao finalizar quentinhas:", erro);
   }
 
   const historico = obterHistoricoLocal();
